@@ -1,0 +1,6 @@
+.idea
+.ipynb_checkpoints
+venv
+Project_cod.zip
+__pycache__
+training_logs
