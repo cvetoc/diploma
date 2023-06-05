@@ -1,9 +1,9 @@
 import os
 
 class TXTLogger:
-    def __init__(self, work_dir):
+    def __init__(self, work_dir, filename="progress_log.txt"):
         self.save_dir = work_dir
-        self.filename = "progress_log.txt"
+        self.filename = filename
 
         if not os.path.exists(self.save_dir):
             os.makedirs(self.save_dir)

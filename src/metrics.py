@@ -2,6 +2,7 @@ from typing import Tuple, List
 
 import numpy as np
 from torchtext.data.metrics import bleu_score
+from torchmetrics.classification import BinaryAccuracy
 
 
 def bleu_scorer(predicted: np.ndarray, actual: np.ndarray, target_tokenizer):
@@ -26,8 +27,16 @@ def bleu_scorer(predicted: np.ndarray, actual: np.ndarray, target_tokenizer):
     for a, b in zip(predicted, actual):
         words_predicted = target_tokenizer.decode(a)
         words_actual = target_tokenizer.decode(b)
-        batch_bleu.append(bleu_score([words_predicted], [[words_actual]], max_n=4, weights=[0.25, 0.25, 0.25, 0.25]))
+        batch_bleu.append(bleu_score([words_predicted], [words_actual], max_n=4, weights=[0.25, 0.25, 0.25, 0.25]))
         predicted_sentences.append(words_predicted)
         actual_sentences.append(words_actual)
     batch_bleu = np.mean(batch_bleu)
     return batch_bleu, actual_sentences, predicted_sentences
+
+def clas_scorer(predicted: np.ndarray, actual: np.ndarray):
+    metric = BinaryAccuracy()
+    batch_metric = []
+    for a, b in zip(predicted, actual):
+        batch_metric.append(metric(a, b))
+    batch_metric = np.mean(batch_metric)
+    return batch_metric

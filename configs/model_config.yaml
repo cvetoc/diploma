@@ -4,6 +4,6 @@ num_layers: 3
 nhead: 8
 vocab_size: 150
 dim_feedforward: 256
-learning_rate: 0.001
+learning_rate: 1.
 epoch_num: 50
 try_one_batch: True

@@ -28,7 +28,7 @@ class DataManager:
         dev_data = json.load(open(os.path.join(path_data), 'r', encoding="utf-8"))
         target_sentences = []
         source_sentences = []
-        for sample in tqdm(dev_data):
+        for sample in tqdm(dev_data, desc="Pars data"):
             target_sentences.append(sample['masked_sparql'])
             source_sentences.append(sample['question'])
 
@@ -43,7 +43,7 @@ class DataManager:
         source_sentences_mlm = source_sentences[:separate_size]
 
         target_sentences_mlm_temp = []
-        for sentence in target_sentences_mlm:
+        for sentence in tqdm(target_sentences_mlm, desc="data mlm"):
             temp_list = sentence.split()
             kol_mask = int(len(temp_list) * 0.15)
             for word_i in range(len(temp_list)):

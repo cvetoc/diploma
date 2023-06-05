@@ -13,7 +13,7 @@ class Trainer:
     def train(self, train_dataloader, val_dataloader):
         try:
             iterations = tqdm(range(self.epoch_num))
-            iterations.set_postfix({'Current BLEU': 0.0, "val loss": 0.0, "train loss": 0.0})
+            iterations.set_postfix({'Current class': 0.0, 'Current BLEU': 0.0, "val loss": 0.0, "train loss": 0.0})
             for epoch in iterations:
                 train_epoch_loss = 0
                 self.model.train()
@@ -29,10 +29,11 @@ class Trainer:
                     val_epoch_loss += val_loss
                 val_epoch_loss = val_epoch_loss / len(val_dataloader)
 
-                input_tensor, target_tensor = batch
-                predicted_samples, _ = self.model.forward(batch)
+                _, target_tensor, _, _, target_tensor_clas = batch
+                predicted_samples, predicted_clas = self.model.forward(batch)
                 bleu_score, actual_sentences, predicted_sentences = self.model.eval_bleu(predicted_samples, target_tensor)
-                iterations.set_postfix({'Current BLEU': bleu_score, "val loss": val_epoch_loss, "train loss": train_epoch_loss})
+                clas_score = self.model.eval_clas(predicted_clas, target_tensor_clas)
+                iterations.set_postfix({'Current class': clas_score, 'Current BLEU': bleu_score, "val loss": val_epoch_loss, "train loss": train_epoch_loss})
 
                 if self.prin:
                     for a, b in zip(actual_sentences[:5], predicted_sentences[:5]):
