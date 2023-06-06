@@ -28,11 +28,6 @@ def pre_train(prin=False, filename="aug_progress_log.txt"):
     logger = TXTLogger('training_logs', filename='pre_'+filename)
     trainer_cls = trainer.Trainer(model=model, model_config=model_config, logger=logger, prin=prin)
 
-    # print(list(train_dataloader))
-    # if model_config['try_one_batch']:
-    #     train_dataloader = [list(train_dataloader)[0]]
-    #     dev_dataloader = [list(train_dataloader)[0]]
-
     trainer_cls.train(train_dataloader, dev_dataloader)
 
     train_dataloader = dm.prepare_data(path_data="data/russian_dev_split.json", drop_last=False, aug=False)

@@ -30,6 +30,7 @@ class Trainer:
                 val_epoch_loss = val_epoch_loss / len(val_dataloader)
 
                 _, target_tensor, _, _, target_tensor_clas = batch
+                # TODO переписать предикт
                 predicted_samples, predicted_clas = self.model.forward(batch)
                 bleu_score, actual_sentences, predicted_sentences = self.model.eval_bleu(predicted_samples, target_tensor)
                 clas_score = self.model.eval_clas(predicted_clas, target_tensor_clas)
@@ -42,7 +43,8 @@ class Trainer:
 
                 self.logger.log({"val_loss": val_epoch_loss,
                                  "train_loss": train_epoch_loss,
-                                 "bleu_score": bleu_score})
+                                 "bleu_score": bleu_score,
+                                 "clas_score": clas_score})
 
         except KeyboardInterrupt:
             pass

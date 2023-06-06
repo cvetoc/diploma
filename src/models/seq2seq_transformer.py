@@ -29,43 +29,53 @@ class Seq2SeqTransformer(nn.Module):
             for name, param in self.named_parameters():
                 param.copy_(torch.randn(param.size()))
 
-        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=lr)
+        # TODO поробуй другой
+        self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=lr)
         self.scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=sched_step, gamma=sched_gamma)
-        self.loss = nn.CrossEntropyLoss()
+        self.loss_tok = nn.CrossEntropyLoss(ignore_index=tokenizer.tokenizer.pad_token_id)
+        self.loss_clas = nn.CrossEntropyLoss()
 
         self.sm = nn.Softmax(dim=1)
 
     def reset_learn(self):
         self.loss = nn.CrossEntropyLoss()
-        self.optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
+        self.optimizer = torch.optim.AdamW(self.parameters(), lr=self.lr)
         self.scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=self.sched_step, gamma=self.sched_gamma)
 
     def forward(self, batch):
         src, _, token_type_ids, attention_mask, _ = batch
 
         predicted = self.model(input_ids=src, token_type_ids=token_type_ids, attention_mask=attention_mask)
-        decoder_outputs = torch.argmax(predicted.prediction_logits, dim=-1)
+        decoder_outputs = predicted.prediction_logits
         class_outputs = predicted.seq_relationship_logits
 
         return decoder_outputs, class_outputs
 
     def training_step(self, batch):
+        # TODO переписать лозз
         self.optimizer.zero_grad()
         X_tensor, Y_tensor, _, _, clas = batch
         decoder_outputs, class_outputs = self.forward(batch)
-        labels = Y_tensor
-        labels = torch.where(decoder_outputs == self.tokenizer.tokenizer.mask_token_id, Y_tensor, -100)
-        loss = self.loss(class_outputs, clas) + self.loss(decoder_outputs.to(torch.float), labels.to(torch.float))
+        decoder_outputs = decoder_outputs.view(-1, decoder_outputs.size(-1))
+        class_outputs = class_outputs.view(-1, class_outputs.size(-1))
+        labels = Y_tensor.view(-1)
+        clas = clas.view(-1)
+        # labels = torch.where(decoder_outputs == self.tokenizer.tokenizer.mask_token_id, Y_tensor, -100)
+        loss = self.loss_clas(class_outputs, clas) + self.loss_tok(decoder_outputs, labels)
         loss.backward()
         self.optimizer.step()
+        self.scheduler.step()
         return loss.item()
 
     def validation_step(self, batch):
+        # TODO переписать лозз
         X_tensor, Y_tensor, _, _, clas = batch
         decoder_outputs, class_outputs = self.forward(batch)
-        labels = Y_tensor
-        labels = torch.where(decoder_outputs == self.tokenizer.tokenizer.mask_token_id, Y_tensor, -100)
-        loss = self.loss(class_outputs, clas) + self.loss(decoder_outputs.to(torch.float), labels.to(torch.float))
+        decoder_outputs = decoder_outputs.view(-1, decoder_outputs.size(-1))
+        class_outputs = class_outputs.view(-1, class_outputs.size(-1))
+        labels = Y_tensor.view(-1)
+        clas = clas.view(-1)
+        loss = self.loss_clas(class_outputs, clas) + self.loss_tok(decoder_outputs, labels)
         return loss.item()
 
     def eval_bleu(self, predicted_ids_list, target_tensor):
