@@ -10,7 +10,7 @@ class Seq2SeqTransformer(nn.Module):
     def __init__(self,
                  device,
                  tokenizer,
-                 sched_step=20,
+                 sched_step=50,
                  sched_gamma=0.1,
                  lr=0.001):
         super(Seq2SeqTransformer, self).__init__()
@@ -25,14 +25,14 @@ class Seq2SeqTransformer(nn.Module):
         self.model.resize_token_embeddings(len(self.tokenizer))
 
         # обучить с 0
-        with torch.no_grad():
-            for name, param in self.named_parameters():
-                param.copy_(torch.randn(param.size()))
+        # with torch.no_grad():
+        #     for name, param in self.named_parameters():
+        #         param.copy_(torch.randn(param.size()))
 
         # TODO поробуй другой
-        self.optimizer = Adafactor(self.model.parameters(), lr=lr, relative_step=False)
+        self.optimizer = Adafactor(self.model.parameters(), relative_step=True)
         self.scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=sched_step, gamma=sched_gamma)
-        self.loss_tok = nn.CrossEntropyLoss(ignore_index=tokenizer.tokenizer.pad_token_id)
+        self.loss_tok = nn.CrossEntropyLoss()#(ignore_index=tokenizer.tokenizer.pad_token_id)
         self.loss_clas = nn.CrossEntropyLoss()
 
         self.sm = nn.Softmax(dim=1)
@@ -64,7 +64,7 @@ class Seq2SeqTransformer(nn.Module):
         loss = self.loss_clas(class_outputs, clas) + self.loss_tok(decoder_outputs, labels)
         loss.backward()
         self.optimizer.step()
-        self.scheduler.step()
+        #self.scheduler.step()
         return loss.item()
 
     def validation_step(self, batch):
