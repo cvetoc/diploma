@@ -33,7 +33,7 @@ def pre_train(prin=False, filename="aug_progress_log.txt"):
     train_dataloader = dm.prepare_data(path_data="data/russian_dev_split.json", drop_last=False, aug=False)
     dev_dataloader = dm.prepare_data(path_data="data/russian_test_split.json", drop_last=True, aug=False)
 
-    model.lr = 0.0001
+    model.lr = 0.001
     model.sched_step = 1000
     model.reset_learn()
 

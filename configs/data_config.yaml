@@ -7,3 +7,4 @@ batch_size: 64
 vocab_size: 150
 min_frequency: 0
 max_sent_len: 100
+separate_batch: -1

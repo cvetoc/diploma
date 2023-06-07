@@ -35,8 +35,5 @@ def bleu_scorer(predicted: np.ndarray, actual: np.ndarray, target_tokenizer):
 
 def clas_scorer(predicted: np.ndarray, actual: np.ndarray):
     metric = BinaryAccuracy()
-    batch_metric = []
-    for a, b in zip(predicted, actual):
-        batch_metric.append(metric(a, b))
-    batch_metric = np.mean(batch_metric)
+    batch_metric = float(metric(predicted, actual))
     return batch_metric

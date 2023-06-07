@@ -118,6 +118,8 @@ def main(prin=False):
 
     return model, dm, train_dataloader, dev_dataloader
 
+from train_seq2seq_transformer import pre_train
 
 if __name__ == "__main__":
-    model, dm, train, val = main(True)
+    #model, dm, train, val = main(True)
+    model, dm, train, val = pre_train(True)

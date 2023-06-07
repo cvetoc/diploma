@@ -4,7 +4,7 @@ import math
 
 import src.metrics as metrics
 from transformers import BertForPreTraining
-
+from transformers.optimization import Adafactor
 
 class Seq2SeqTransformer(nn.Module):
     def __init__(self,
@@ -30,7 +30,7 @@ class Seq2SeqTransformer(nn.Module):
                 param.copy_(torch.randn(param.size()))
 
         # TODO поробуй другой
-        self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=lr)
+        self.optimizer = Adafactor(self.model.parameters(), lr=lr, relative_step=False)
         self.scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=sched_step, gamma=sched_gamma)
         self.loss_tok = nn.CrossEntropyLoss(ignore_index=tokenizer.tokenizer.pad_token_id)
         self.loss_clas = nn.CrossEntropyLoss()
@@ -80,6 +80,7 @@ class Seq2SeqTransformer(nn.Module):
 
     def eval_bleu(self, predicted_ids_list, target_tensor):
         predicted = predicted_ids_list.clone()
+        predicted = torch.argmax(predicted, dim=-1)
         predicted = predicted.squeeze(-1).detach().cpu().numpy()
         actuals = target_tensor.squeeze(-1).detach().cpu().numpy()
         bleu_score, actual_sentences, predicted_sentences = metrics.bleu_scorer(
@@ -89,7 +90,7 @@ class Seq2SeqTransformer(nn.Module):
 
     def eval_clas(self, predicted_ids_list, target_tensor):
         predicted = predicted_ids_list.clone()
-        predicted = self.sm(predicted)
+        predicted = torch.argmax(predicted, dim=-1)
         predicted = predicted.squeeze(-1).detach().cpu()
         actuals = target_tensor.squeeze(-1).detach().cpu()
         clas_score = metrics.clas_scorer(predicted=predicted, actual=actuals)

@@ -28,7 +28,7 @@ class DataManager:
         dev_data = json.load(open(os.path.join(path_data), 'r', encoding="utf-8"))
         target_sentences = []
         source_sentences = []
-        for sample in tqdm(dev_data[:130], desc="Pars data"):
+        for sample in tqdm(dev_data[:self.config["separate_batch"]], desc="Pars data"):
             target_sentences.append(sample['masked_sparql'])
             source_sentences.append(sample['question'])
 
