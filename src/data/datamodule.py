@@ -5,7 +5,7 @@ from random import randint
 
 from tqdm import tqdm
 
-from src.data.mt_dataset import MTDataset
+from src.data.mt_dataset import MTDataset_mlm, MTDataset_shift
 from src.data.tokenizers.unif_tokenizers import UNIFTokenizer
 from src.data.mm_augmentation import MM_Augmentation
 from src.data.augmetator import Augmetator_func_tool
@@ -20,27 +20,27 @@ class DataManager:
         self.config = config
         self.device = device
 
-    def prepare_data(self, path_data, drop_last=False, aug=False):
-
-        self.tokenizer = UNIFTokenizer(path="data/query_vocab.json", pad_flag=True,
+        self.tokenizer = UNIFTokenizer(path=self.config["path_repository"] + "data/query_vocab.json", pad_flag=True,
                                        max_length=self.config["max_sent_len"])
 
-        dev_data = json.load(open(os.path.join(path_data), 'r', encoding="utf-8"))
+    def prepare_data(self, path_data, drop_last=False, aug=False):
+
+        dev_data = json.load(open(os.path.join(self.config["path_repository"] + path_data), 'r', encoding="utf-8"))
         target_sentences = []
         source_sentences = []
         for sample in tqdm(dev_data[:self.config["separate_batch"]], desc="Pars data"):
             target_sentences.append(sample['masked_sparql'])
             source_sentences.append(sample['question'])
 
+        source_sentences_true = source_sentences.copy()
+
         if aug:
             tools = Augmetator_func_tool()
             augmentor = MM_Augmentation(tools)
             source_sentences = augmentor.run(source_sentences)
 
-        separate_size = int(len(source_sentences) * self.config["separate_size"])
-
-        target_sentences_mlm = target_sentences[:separate_size]
-        source_sentences_mlm = source_sentences[:separate_size]
+        target_sentences_mlm = target_sentences.copy()
+        source_sentences_mlm = source_sentences.copy()
 
         target_sentences_mlm_temp = []
         for sentence in tqdm(target_sentences_mlm, desc="data mlm"):
@@ -56,8 +56,8 @@ class DataManager:
         target_sentences_mlm = target_sentences_mlm_temp.copy()
         del target_sentences_mlm_temp
 
-        target_sentences_shift = target_sentences[separate_size:]
-        source_sentences_shift = source_sentences[separate_size:]
+        target_sentences_shift = target_sentences.copy()
+        source_sentences_shift = source_sentences.copy()
 
         sep_border = int(len(target_sentences_shift) * 0.5)
 
@@ -65,23 +65,47 @@ class DataManager:
         source_sentences_shift = source_sentences_shift[sep:sep_border] + source_sentences_shift[
                                                                           :sep] + source_sentences_shift[sep_border:]
 
-        class_label = [[0] for _ in range(separate_size)]
-        for _ in range(sep_border):
+        class_label = [[0] for _ in range(sep_border)]
+        for _ in range(len(source_sentences_shift) - sep_border):
             class_label.append([1])
-        for _ in range(len(source_sentences) - sep_border - separate_size):
-            class_label.append([0])
 
-        target_sentences_X = target_sentences_mlm + target_sentences_shift
-        source_sentences_X = source_sentences_mlm + source_sentences_shift
+        tokenized_source_sentences_mlm = [self.tokenizer(i, j) for i, j in
+                                          zip(source_sentences_mlm, target_sentences_mlm)]
+        tokenized_target_sentences_mlm = [self.tokenizer(i, j) for i, j in zip(source_sentences_true, target_sentences)]
+        tokenized_source_sentences_shift = [self.tokenizer(i, j) for i, j in
+                                            zip(source_sentences_shift, target_sentences_shift)]
 
-        tokenized_source_sentences = [(self.tokenizer(i, j), z) for i, j, z in
-                                      zip(source_sentences_X, target_sentences_X, class_label)]
-        tokenized_target_sentences = [self.tokenizer(i, j) for i, j in zip(source_sentences, target_sentences)]
+        dataset_mlm = MTDataset_mlm(tokenized_source_list=tokenized_source_sentences_mlm,
+                                      tokenized_target_list=tokenized_target_sentences_mlm, dev=self.device)
 
-        train_dataset = MTDataset(tokenized_source_list=tokenized_source_sentences,
-                                  tokenized_target_list=tokenized_target_sentences, dev=self.device)
+        dataset_shift = MTDataset_shift(tokenized_source_list=tokenized_source_sentences_shift,
+                                      tokenized_target_list=class_label, dev=self.device)
 
-        train_dataloader = DataLoader(train_dataset, shuffle=True,
+        dataloader_mlm = DataLoader(dataset_mlm, shuffle=True,
+                                    batch_size=self.config["batch_size"], drop_last=drop_last)
+
+        dataloader_shift = DataLoader(dataset_shift, shuffle=True,
                                       batch_size=self.config["batch_size"], drop_last=drop_last)
 
-        return train_dataloader
+
+        return dataloader_mlm, dataloader_shift
+
+import yaml
+
+if __name__ == "__main__":
+
+    path = "D:/ФизТех/Учеба в маге/2 курс (10сем)/Кафедральные/Машинное обучение продвинутый уровень/статья/Project_cod/"
+    data_config = yaml.load(open(path + "configs/data_config.yaml", 'r'), Loader=yaml.Loader)
+    dm = DataManager(data_config, "cpu")
+
+    dataloader_mlm, dataloader_shift = dm.prepare_data(path_data="data/russian_dev_split.json", drop_last=False, aug=True)
+
+    for batch in dataloader_mlm:
+        print(batch[0][0], batch[1][0], batch[2][0], batch[3][0])
+        break
+
+    for batch in dataloader_shift:
+        print(batch[0][0], batch[1][0], batch[2][0], batch[3][0])
+        break
+
+    print("OK")

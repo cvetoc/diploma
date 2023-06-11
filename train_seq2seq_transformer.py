@@ -4,44 +4,8 @@ from src.models import trainer
 from src.data.datamodule import DataManager
 from src.txt_logger import TXTLogger
 from src.models.seq2seq_transformer import Seq2SeqTransformer
+from src.utils import graf
 
-def pre_train(prin=False, filename="aug_progress_log.txt"):
-    if torch.cuda.is_available():
-        DEVICE = "cuda"
-    else:
-        DEVICE = 'cpu'
-
-    print("DEVICE =", DEVICE)
-
-    data_config = yaml.load(open("configs/data_config.yaml", 'r'), Loader=yaml.Loader)
-    dm = DataManager(data_config, DEVICE)
-    train_dataloader = dm.prepare_data(path_data="data/russian_train_split.json", drop_last=False, aug=True)
-    dev_dataloader = dm.prepare_data(path_data="data/russian_dev_split.json", drop_last=True, aug=False)
-
-    model_config = yaml.load(open("configs/model_config.yaml", 'r'), Loader=yaml.Loader)
-
-    model = Seq2SeqTransformer(device=DEVICE,
-                               tokenizer=dm.tokenizer,
-                               lr=model_config["learning_rate"]
-                               ).to(DEVICE)
-
-    logger = TXTLogger('training_logs', filename='pre_'+filename)
-    trainer_cls = trainer.Trainer(model=model, model_config=model_config, logger=logger, prin=prin)
-
-    trainer_cls.train(train_dataloader, dev_dataloader)
-
-    train_dataloader = dm.prepare_data(path_data="data/russian_dev_split.json", drop_last=False, aug=False)
-    dev_dataloader = dm.prepare_data(path_data="data/russian_test_split.json", drop_last=True, aug=False)
-
-    model.lr = 0.001
-    model.sched_step = 1000
-    model.reset_learn()
-
-    logger = TXTLogger('training_logs', filename=filename)
-    trainer_cls = trainer.Trainer(model=model, model_config=model_config, logger=logger, prin=prin)
-    trainer_cls.train(train_dataloader, dev_dataloader)
-
-    return model, dm, train_dataloader, dev_dataloader
 def train(prin=False, filename="progress_log.txt"):
     if torch.cuda.is_available():
         DEVICE = "cuda"
@@ -50,16 +14,18 @@ def train(prin=False, filename="progress_log.txt"):
 
     print("DEVICE =", DEVICE)
 
-    data_config = yaml.load(open("configs/data_config.yaml", 'r'), Loader=yaml.Loader)
+    data_config = yaml.load(open("configs/data_config.yaml", 'r', encoding='utf-8'), Loader=yaml.Loader)
     dm = DataManager(data_config, DEVICE)
-    train_dataloader = dm.prepare_data(path_data="data/russian_dev_split.json", drop_last=False, aug=False)
-    dev_dataloader = dm.prepare_data(path_data="data/russian_test_split.json", drop_last=True, aug=False)
+    train_dataloader_mlm, train_dataloader_shift = dm.prepare_data(path_data="data/russian_dev_split.json", drop_last=False, aug=True)
+    dev_dataloader_mlm, dev_dataloader_shift = dm.prepare_data(path_data="data/russian_test_split.json", drop_last=True, aug=False)
 
-    model_config = yaml.load(open("configs/model_config.yaml", 'r'), Loader=yaml.Loader)
+    model_config = yaml.load(open("configs/model_config.yaml", 'r', encoding='utf-8'), Loader=yaml.Loader)
 
     model = Seq2SeqTransformer(device=DEVICE,
                                tokenizer=dm.tokenizer,
-                               lr=model_config["learning_rate"]
+                               lr=model_config["learning_rate"],
+                               sched_step=model_config["sched_step"],
+                               sched_gamma=model_config["sched_gamma"]
                                ).to(DEVICE)
 
     logger = TXTLogger('training_logs', filename=filename)
@@ -70,10 +36,13 @@ def train(prin=False, filename="progress_log.txt"):
     #     train_dataloader = [list(train_dataloader)[0]]
     #     dev_dataloader = [list(train_dataloader)[0]]
 
-    trainer_cls.train(train_dataloader, dev_dataloader)
+    trainer_cls.train((train_dataloader_mlm, train_dataloader_shift), (dev_dataloader_mlm, dev_dataloader_shift))
 
-    return model, dm, train_dataloader, dev_dataloader
+    return model, dm, (train_dataloader_mlm, train_dataloader_shift), (dev_dataloader_mlm, dev_dataloader_shift)
 
 
 if __name__ == "__main__":
-    model, dm, train, val = train(True)
+    #model, dm, train, val = train(True)
+    data_config = yaml.load(open("configs/data_config.yaml", 'r', encoding='utf-8'), Loader=yaml.Loader)
+    graf(data_config["path_repository"] + "training_logs/progress_log.txt")
+

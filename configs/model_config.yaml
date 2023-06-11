@@ -1,9 +1,6 @@
 ---
-embedding_size: 256
-num_layers: 3
-nhead: 8
-vocab_size: 150
-dim_feedforward: 256
 learning_rate: 0.01
+sched_step: 50
+sched_gamma: 0.1
 epoch_num: 20
-try_one_batch: True
+try_one_batch: False

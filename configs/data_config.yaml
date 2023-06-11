@@ -1,10 +1,5 @@
 ---
-prefix_filter: False
-max_length: 15
-filename: "data/russian_train_split.json"
-separate_size: 0.7
-batch_size: 64
-vocab_size: 150
-min_frequency: 0
+path_repository: "D:/ФизТех/Учеба в маге/2 курс (10сем)/Кафедральные/Машинное обучение продвинутый уровень/статья/Project_cod/"
+batch_size: 32
 max_sent_len: 100
 separate_batch: -1
