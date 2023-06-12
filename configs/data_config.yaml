@@ -1,5 +1,5 @@
 ---
-path_repository: "D:/ФизТех/Учеба в маге/2 курс (10сем)/Кафедральные/Машинное обучение продвинутый уровень/статья/Project_cod/"
+path_repository: ""
 batch_size: 32
 max_sent_len: 100
 separate_batch: -1

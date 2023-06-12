@@ -53,7 +53,7 @@ class Seq2SeqTransformer(nn.Module):
 
     def training_step_mlm(self, batch):
         self.optimizer.zero_grad()
-        X_tensor, _, _, Y_tensor = batch
+        _, _, _, Y_tensor = batch
         decoder_outputs, _ = self.forward(batch)
         decoder_outputs = decoder_outputs.view(-1, decoder_outputs.size(-1))
         labels = Y_tensor.view(-1)
@@ -66,7 +66,7 @@ class Seq2SeqTransformer(nn.Module):
     def training_step_clas(self, batch):
         # TODO возможно косяк так как плохо обучается + есть переобучение (водно на val)
         self.optimizer.zero_grad()
-        X_tensor, _, _, clas = batch
+        _, _, _, clas = batch
         _, class_outputs = self.forward(batch)
         class_outputs = class_outputs.view(-1, class_outputs.size(-1))
         clas = clas.view(-1)

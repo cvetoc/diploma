@@ -16,8 +16,8 @@ def train(prin=False, filename="progress_log.txt"):
 
     data_config = yaml.load(open("configs/data_config.yaml", 'r', encoding='utf-8'), Loader=yaml.Loader)
     dm = DataManager(data_config, DEVICE)
-    train_dataloader_mlm, train_dataloader_shift = dm.prepare_data(path_data="data/russian_dev_split.json", drop_last=False, aug=True)
-    dev_dataloader_mlm, dev_dataloader_shift = dm.prepare_data(path_data="data/russian_test_split.json", drop_last=True, aug=False)
+    train_dataloader_mlm, train_dataloader_shift = dm.prepare_data(path_data="data/russian_train_split.json", drop_last=False, aug=True)
+    dev_dataloader_mlm, dev_dataloader_shift = dm.prepare_data(path_data="data/russian_dev_split.json", drop_last=True, aug=False)
 
     model_config = yaml.load(open("configs/model_config.yaml", 'r', encoding='utf-8'), Loader=yaml.Loader)
 
@@ -40,9 +40,15 @@ def train(prin=False, filename="progress_log.txt"):
 
     return model, dm, (train_dataloader_mlm, train_dataloader_shift), (dev_dataloader_mlm, dev_dataloader_shift)
 
-
 if __name__ == "__main__":
-    #model, dm, train, val = train(True)
+
+    model, dm, train, val = train(True)
     data_config = yaml.load(open("configs/data_config.yaml", 'r', encoding='utf-8'), Loader=yaml.Loader)
     graf(data_config["path_repository"] + "training_logs/progress_log.txt")
+
+    torch.save(model.state_dict(), "save_model.pt")
+
+    model_temp = torch.load("save_model.pt")
+
+    print(dir(model_temp))
 
