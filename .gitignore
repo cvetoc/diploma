@@ -1,6 +1,7 @@
 .idea
 .ipynb_checkpoints
 venv
+experiments
 Project_cod.zip
 __pycache__
 training_logs

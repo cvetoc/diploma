@@ -93,15 +93,26 @@ class Seq2SeqTransformer(nn.Module):
         loss = self.loss_clas(class_outputs, clas)
         return loss.item()
 
-    def eval_mlm(self, predicted_ids_list, target_tensor):
+    def eval_str(self, predicted_ids_list, target_tensor):
         predicted = predicted_ids_list.clone()
         predicted = torch.argmax(predicted, dim=-1)
         predicted = predicted.squeeze(-1).detach().cpu().numpy()
         actuals = target_tensor.squeeze(-1).detach().cpu().numpy()
-        bleu_score, actual_sentences, predicted_sentences = metrics.mask_scorer(
+        str_score, actual_sentences, predicted_sentences = metrics.str_scorer(
             predicted=predicted, actual=actuals, target_tokenizer=self.tokenizer
         )
-        return bleu_score, actual_sentences, predicted_sentences
+        return str_score, actual_sentences, predicted_sentences
+
+    def eval_mlm(self, input_ids_list, predicted_ids_list, target_tensor):
+        predicted = predicted_ids_list.clone()
+        predicted = torch.argmax(predicted, dim=-1)
+        input_tensor = input_ids_list.squeeze(-1).detach().cpu().numpy()
+        predicted = predicted.squeeze(-1).detach().cpu().numpy()
+        actuals = target_tensor.squeeze(-1).detach().cpu().numpy()
+        bleu_score = metrics.mask_scorer(input_tensor=input_tensor,
+            predicted=predicted, actual=actuals, tokenizer=self.tokenizer
+        )
+        return bleu_score
 
     def eval_clas(self, predicted_ids_list, target_tensor):
         predicted = predicted_ids_list.clone()

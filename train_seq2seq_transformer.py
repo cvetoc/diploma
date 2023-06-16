@@ -31,10 +31,13 @@ def train(prin=False, filename="progress_log.txt"):
     logger = TXTLogger('training_logs', filename=filename)
     trainer_cls = trainer.Trainer(model=model, model_config=model_config, logger=logger, prin=prin)
 
-    # print(list(train_dataloader))
-    # if model_config['try_one_batch']:
-    #     train_dataloader = [list(train_dataloader)[0]]
-    #     dev_dataloader = [list(train_dataloader)[0]]
+    if model_config['try_one_batch']:
+        for a, b in zip(train_dataloader_mlm, train_dataloader_shift):
+            train_dataloader_mlm = [a]
+            train_dataloader_shift = [b]
+            dev_dataloader_mlm = [a]
+            dev_dataloader_shift = [b]
+            break
 
     trainer_cls.train((train_dataloader_mlm, train_dataloader_shift), (dev_dataloader_mlm, dev_dataloader_shift))
 

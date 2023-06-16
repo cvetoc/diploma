@@ -42,13 +42,14 @@ def clas_scorer(predicted: np.ndarray, actual: np.ndarray):
     batch_metric = float(metric(predicted, actual))
     return batch_metric
 
-def mask_scorer(predicted: np.ndarray, actual: np.ndarray, target_tokenizer):
+def str_scorer(predicted: np.ndarray, actual: np.ndarray, target_tokenizer):
     metric = Accuracy(task="multiclass", num_classes=len(target_tokenizer))
     batch_metric = []
     predicted_sentences = []
     actual_sentences = []
 
     for a, b in zip(predicted, actual):
+        # labels = torch.where(decoder_outputs == self.tokenizer.tokenizer.mask_token_id, Y_tensor, -100)
         batch_metric.append(float(metric(torch.tensor(a), torch.tensor(b))))
 
         words_predicted = target_tokenizer.decode(a)
@@ -58,3 +59,15 @@ def mask_scorer(predicted: np.ndarray, actual: np.ndarray, target_tokenizer):
 
     batch_metric = np.mean(batch_metric)
     return batch_metric, actual_sentences, predicted_sentences
+
+def mask_scorer(input_tensor: np.ndarray, predicted: np.ndarray, actual: np.ndarray, tokenizer):
+    metric = Accuracy(task="multiclass", num_classes=len(tokenizer), ignore_index=-1)
+    batch_metric = []
+
+    for a, b, c in zip(input_tensor, predicted, actual):
+        predict = np.where(a == tokenizer.tokenizer.mask_token_id, b, -1)
+        labels = np.where(a == tokenizer.tokenizer.mask_token_id, c, -1)
+        batch_metric.append(float(metric(torch.tensor(predict), torch.tensor(labels))))
+
+    batch_metric = np.mean(batch_metric)
+    return batch_metric
