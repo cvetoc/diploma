@@ -21,10 +21,10 @@ class Trainer:
                 train_epoch_loss_clas = 0
                 self.model.train()
                 for batch_mlm, batch_clas in zip(*train_dataloader):
-                    train_loss = self.model.training_step_mlm(batch_mlm)
-                    train_epoch_loss_mlm += train_loss
-                    train_loss = self.model.training_step_clas(batch_clas)
-                    train_epoch_loss_clas += train_loss
+                    # TODO обеденить батчи для loss
+                    train_loss_mlm, train_loss_clas = self.model.training_step(batch_mlm, batch_clas)
+                    train_epoch_loss_mlm += train_loss_mlm
+                    train_epoch_loss_clas += train_loss_clas
                 train_epoch_loss_mlm = train_epoch_loss_mlm / len(train_dataloader[0])
                 train_epoch_loss_clas = train_epoch_loss_clas / len(train_dataloader[1])
 

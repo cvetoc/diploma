@@ -32,12 +32,12 @@ class DataManager:
             target_sentences.append(sample['masked_sparql'])
             source_sentences.append(sample['question'])
 
-        source_sentences_true = source_sentences.copy()
-
-        if aug:
+        if aug: # TODO +0.3
             tools = Augmetator_func_tool()
             augmentor = MM_Augmentation(tools)
             source_sentences = augmentor.run(source_sentences)
+
+        source_sentences_true = source_sentences.copy()
 
         target_sentences_mlm = target_sentences.copy()
         source_sentences_mlm = source_sentences.copy()

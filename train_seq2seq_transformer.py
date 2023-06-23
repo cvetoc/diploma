@@ -49,9 +49,6 @@ if __name__ == "__main__":
     data_config = yaml.load(open("configs/data_config.yaml", 'r', encoding='utf-8'), Loader=yaml.Loader)
     graf(data_config["path_repository"] + "training_logs/progress_log.txt")
 
+    # https://pytorch.org/tutorials/beginner/saving_loading_models.html
     torch.save(model.state_dict(), "save_model.pt")
-
-    model_temp = torch.load("save_model.pt")
-
-    print(dir(model_temp))
 

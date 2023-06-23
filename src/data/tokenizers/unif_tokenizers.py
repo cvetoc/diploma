@@ -33,5 +33,7 @@ class UNIFTokenizer:
         return len(self.tokenizer)
 
     def decode(self, token_list):
+        # ирм
+        # TODO пофиксить
         token_list = self.tokenizer.decode(token_list)
         return token_list

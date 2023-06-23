@@ -51,31 +51,33 @@ class Seq2SeqTransformer(nn.Module):
 
         return decoder_outputs, class_outputs
 
-    def training_step_mlm(self, batch):
+    def training_step(self, batch_mlm, batсh_nsp):
         self.optimizer.zero_grad()
-        _, _, _, Y_tensor = batch
-        decoder_outputs, _ = self.forward(batch)
+
+        # mlm loss
+        _, _, _, Y_tensor = batch_mlm
+        decoder_outputs, _ = self.forward(batch_mlm)
         decoder_outputs = decoder_outputs.view(-1, decoder_outputs.size(-1))
         labels = Y_tensor.view(-1)
-        loss = self.loss_tok(decoder_outputs, labels)
-        loss.backward()
-        self.optimizer.step()
-        #self.scheduler.step()
-        return loss.item()
+        # TODO переписать loss
+        # labels = torch.where(decoder_outputs == self.tokenizer.tokenizer.mask_token_id, Y_tensor, -100)
+        # https://discuss.huggingface.co/t/bertformaskedlm-s-loss-and-scores-how-the-loss-is-computed/607/2
+        loss_mlm = self.loss_tok(decoder_outputs, labels)
 
-    def training_step_clas(self, batch):
+        # nsp loss
         # TODO возможно косяк так как плохо обучается + есть переобучение (водно на val)
-        self.optimizer.zero_grad()
-        _, _, _, clas = batch
-        _, class_outputs = self.forward(batch)
+        _, _, _, clas = batсh_nsp
+        _, class_outputs = self.forward(batсh_nsp)
         class_outputs = class_outputs.view(-1, class_outputs.size(-1))
         clas = clas.view(-1)
-        # labels = torch.where(decoder_outputs == self.tokenizer.tokenizer.mask_token_id, Y_tensor, -100)
-        loss = self.loss_clas(class_outputs, clas)
+        loss_nsp = self.loss_clas(class_outputs, clas)
+
+        loss = loss_mlm + loss_nsp
+
         loss.backward()
         self.optimizer.step()
-        #self.scheduler.step()
-        return loss.item()
+        # self.scheduler.step()
+        return loss_mlm.item(), loss_nsp.item()
 
     def validation_step_mlm(self, batch):
         X_tensor, _, _, Y_tensor = batch
