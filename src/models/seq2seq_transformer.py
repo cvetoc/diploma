@@ -55,12 +55,12 @@ class Seq2SeqTransformer(nn.Module):
         self.optimizer.zero_grad()
 
         # mlm loss
-        _, _, _, Y_tensor = batch_mlm
+        X_tensor, _, _, Y_tensor = batch_mlm
         decoder_outputs, _ = self.forward(batch_mlm)
         decoder_outputs = decoder_outputs.view(-1, decoder_outputs.size(-1))
+        decoder_input = X_tensor.view(-1)
         labels = Y_tensor.view(-1)
-        # TODO переписать loss
-        # labels = torch.where(decoder_outputs == self.tokenizer.tokenizer.mask_token_id, Y_tensor, -100)
+        labels = torch.where(decoder_input == self.tokenizer.tokenizer.mask_token_id, labels, -100)
         # https://discuss.huggingface.co/t/bertformaskedlm-s-loss-and-scores-how-the-loss-is-computed/607/2
         loss_mlm = self.loss_tok(decoder_outputs, labels)
 
@@ -83,7 +83,9 @@ class Seq2SeqTransformer(nn.Module):
         X_tensor, _, _, Y_tensor = batch
         decoder_outputs, _ = self.forward(batch)
         decoder_outputs = decoder_outputs.view(-1, decoder_outputs.size(-1))
+        decoder_input = X_tensor.view(-1)
         labels = Y_tensor.view(-1)
+        labels = torch.where(decoder_input == self.tokenizer.tokenizer.mask_token_id, labels, -100)
         loss = self.loss_tok(decoder_outputs, labels)
         return loss.item()
 

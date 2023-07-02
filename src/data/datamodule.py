@@ -32,10 +32,17 @@ class DataManager:
             target_sentences.append(sample['masked_sparql'])
             source_sentences.append(sample['question'])
 
-        if aug: # TODO +0.3
+        if aug:
+            aug_index = int(0.3*len(target_sentences))
+            aug_target_sentences = target_sentences[:aug_index]
+            aug_source_sentences = source_sentences[:aug_index]
+
             tools = Augmetator_func_tool()
             augmentor = MM_Augmentation(tools)
-            source_sentences = augmentor.run(source_sentences)
+            aug_source_sentences = augmentor.run(aug_source_sentences)
+
+            target_sentences = target_sentences + aug_target_sentences
+            source_sentences = source_sentences + aug_source_sentences
 
         source_sentences_true = source_sentences.copy()
 
@@ -96,6 +103,7 @@ if __name__ == "__main__":
 
     path = "D:/ФизТех/Учеба в маге/2 курс (10сем)/Кафедральные/Машинное обучение продвинутый уровень/статья/Project_cod/"
     data_config = yaml.load(open(path + "configs/data_config.yaml", 'r'), Loader=yaml.Loader)
+    data_config["path_repository"] = path
     dm = DataManager(data_config, "cpu")
 
     dataloader_mlm, dataloader_shift = dm.prepare_data(path_data="data/russian_dev_split.json", drop_last=False, aug=True)
