@@ -20,35 +20,52 @@ class DataManager:
         self.config = config
         self.device = device
 
-        self.tokenizer = UNIFTokenizer(path=self.config["path_repository"] + "data/query_vocab.json", pad_flag=True,
+        self.tokenizer = UNIFTokenizer(path_tok=self.config["path_repository"] + "data/query_vocab.json",
+                                       pre_train_name=self.config["pre_train_tokenizer"],
+                                       pad_flag=True,
                                        max_length=self.config["max_sent_len"])
 
-    def prepare_data(self, path_data, drop_last=False, aug=False):
+    def _aug_call(self, target, sorce, aug=0.3):
+        aug_index = int(aug * len(target))
+        aug_target = target[:aug_index]
+        aug_source = sorce[:aug_index]
 
-        dev_data = json.load(open(os.path.join(self.config["path_repository"] + path_data), 'r', encoding="utf-8"))
+        tools = Augmetator_func_tool()
+        augmentor = MM_Augmentation(tools)
+        aug_source = augmentor.run(aug_source)
+
+        return aug_target, aug_source
+    def prepare_data(self, path_data, drop_last=False, aug=None):
+
+        dev_data = json.load(open(os.path.join(path_data), 'r', encoding="utf-8"))
         target_sentences = []
         source_sentences = []
         for sample in tqdm(dev_data[:self.config["separate_batch"]], desc="Pars data"):
             target_sentences.append(sample['masked_sparql'])
             source_sentences.append(sample['question'])
 
-        if aug:
-            aug_index = int(0.3*len(target_sentences))
-            aug_target_sentences = target_sentences[:aug_index]
-            aug_source_sentences = source_sentences[:aug_index]
+        sep_flag = int(len(target_sentences)/2)
 
-            tools = Augmetator_func_tool()
-            augmentor = MM_Augmentation(tools)
-            aug_source_sentences = augmentor.run(aug_source_sentences)
+        target_sentences_mlm = target_sentences[:sep_flag].copy()
+        source_sentences_mlm = source_sentences[:sep_flag].copy()
 
-            target_sentences = target_sentences + aug_target_sentences
-            source_sentences = source_sentences + aug_source_sentences
+        target_sentences_shift = target_sentences[sep_flag:2*sep_flag].copy()
+        source_sentences_shift = source_sentences[sep_flag:2*sep_flag].copy()
 
-        source_sentences_true = source_sentences.copy()
+        if aug is not None:
+            aug_target_sentences, aug_source_sentences = self._aug_call(target_sentences_mlm, source_sentences_mlm, aug)
 
-        target_sentences_mlm = target_sentences.copy()
-        source_sentences_mlm = source_sentences.copy()
+            target_sentences_mlm = target_sentences_mlm + aug_target_sentences
+            source_sentences_mlm = source_sentences_mlm + aug_source_sentences
 
+            aug_target_sentences, aug_source_sentences = self._aug_call(target_sentences_shift, source_sentences_shift, aug)
+
+            target_sentences_shift = target_sentences_shift + aug_target_sentences
+            source_sentences_shift = source_sentences_shift + aug_source_sentences
+
+        # MLM
+
+        source_sentences_true = source_sentences_mlm.copy()
         target_sentences_mlm_temp = []
         for sentence in tqdm(target_sentences_mlm, desc="data mlm"):
             temp_list = sentence.split()
@@ -63,8 +80,7 @@ class DataManager:
         target_sentences_mlm = target_sentences_mlm_temp.copy()
         del target_sentences_mlm_temp
 
-        target_sentences_shift = target_sentences.copy()
-        source_sentences_shift = source_sentences.copy()
+        # NSP
 
         sep_border = int(len(target_sentences_shift) * 0.5)
 
@@ -75,6 +91,8 @@ class DataManager:
         class_label = [[0] for _ in range(sep_border)]
         for _ in range(len(source_sentences_shift) - sep_border):
             class_label.append([1])
+
+        # DataLoader
 
         tokenized_source_sentences_mlm = [self.tokenizer(i, j) for i, j in
                                           zip(source_sentences_mlm, target_sentences_mlm)]

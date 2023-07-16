@@ -4,10 +4,10 @@ import json
 
 
 class UNIFTokenizer:
-    def __init__(self, path="data/query_vocab.json", pad_flag=False, max_length=100):
+    def __init__(self, path_tok="data/query_vocab.json", pre_train_name="cointegrated/rubert-tiny", pad_flag=False, max_length=100):
 
-        self.tokenizer = AutoTokenizer.from_pretrained("cointegrated/rubert-tiny")
-        token_list = json.load(open(path, 'r'))
+        self.tokenizer = AutoTokenizer.from_pretrained(pre_train_name)
+        token_list = json.load(open(path_tok, 'r'))
 
         token_list = set(token_list) - set(self.tokenizer.vocab.keys())
         self.tokenizer.add_tokens(list(token_list))
@@ -37,7 +37,7 @@ class UNIFTokenizer:
         token_list = self.tokenizer.decode(token_list)
         # декодер удаляет пробелы перед спецсимволами
         token_list = ' ?'.join(token_list.split('?'))
-        return token_list
+        return token_list.replace(self.tokenizer.pad_token, '')
 
 import os
 import yaml
@@ -64,5 +64,6 @@ if __name__ == "__main__":
     tok_list = [tokenizer(i, j)['input_ids'][0] for i, j in zip(source_sentences, target_sentences)]
     print(tok_list)
     print([tokenizer.decode(i) for i in tok_list])
+
 
 

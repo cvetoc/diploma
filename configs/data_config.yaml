@@ -1,5 +1,8 @@
 ---
 path_repository: ""
+data_name_file: "_split"
+data_language: "russian_"
+pre_train_tokenizer: "cointegrated/rubert-tiny"
 batch_size: 32
 max_sent_len: 100
 separate_batch: -1

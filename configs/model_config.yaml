@@ -1,6 +1,7 @@
 ---
+pre_train_model: "cointegrated/rubert-tiny"
 learning_rate: 0.01
 sched_step: 10
 sched_gamma: 0.1
 epoch_num: 20
-try_one_batch: False
+try_one_batch: True

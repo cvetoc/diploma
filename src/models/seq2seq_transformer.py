@@ -10,12 +10,13 @@ class Seq2SeqTransformer(nn.Module):
     def __init__(self,
                  device,
                  tokenizer,
+                 model_path="cointegrated/rubert-tiny",
                  lr=0.001,
                  sched_step=50,
                  sched_gamma=0.1):
 
         super(Seq2SeqTransformer, self).__init__()
-        self.model = BertForPreTraining.from_pretrained("cointegrated/rubert-tiny").to(device)
+        self.model = BertForPreTraining.from_pretrained(model_path).to(device)
 
         self.device = device
         self.tokenizer = tokenizer
@@ -60,12 +61,13 @@ class Seq2SeqTransformer(nn.Module):
         decoder_outputs = decoder_outputs.view(-1, decoder_outputs.size(-1))
         decoder_input = X_tensor.view(-1)
         labels = Y_tensor.view(-1)
+        # TODO учить на новых токенах
         labels = torch.where(decoder_input == self.tokenizer.tokenizer.mask_token_id, labels, -100)
         # https://discuss.huggingface.co/t/bertformaskedlm-s-loss-and-scores-how-the-loss-is-computed/607/2
         loss_mlm = self.loss_tok(decoder_outputs, labels)
 
         # nsp loss
-        # TODO возможно косяк так как плохо обучается + есть переобучение (водно на val)
+        # TODO возможно косяк так как плохо обучается + есть переобучение (видно на val) (возможно в данных лик)
         _, _, _, clas = batсh_nsp
         _, class_outputs = self.forward(batсh_nsp)
         class_outputs = class_outputs.view(-1, class_outputs.size(-1))
@@ -113,10 +115,10 @@ class Seq2SeqTransformer(nn.Module):
         input_tensor = input_ids_list.squeeze(-1).detach().cpu().numpy()
         predicted = predicted.squeeze(-1).detach().cpu().numpy()
         actuals = target_tensor.squeeze(-1).detach().cpu().numpy()
-        bleu_score = metrics.mask_scorer(input_tensor=input_tensor,
+        bleu_score, actual_sentences, predicted_sentences = metrics.mask_scorer(input_tensor=input_tensor,
             predicted=predicted, actual=actuals, tokenizer=self.tokenizer
         )
-        return bleu_score
+        return bleu_score, actual_sentences, predicted_sentences
 
     def eval_clas(self, predicted_ids_list, target_tensor):
         predicted = predicted_ids_list.clone()

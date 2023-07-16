@@ -38,11 +38,10 @@ class Trainer:
                     val_epoch_loss_clas += val_loss
 
                     predicted_samples, _ = self.model.forward(batch_mlm)
-                    str_score, actual_sentences, predicted_sentences = self.model.eval_str(predicted_samples,
-                                                                                            batch_mlm[-1])
+                    str_score, _, _ = self.model.eval_str(predicted_samples, batch_mlm[-1])
                     str_score_batch += str_score
 
-                    mask_score = self.model.eval_mlm(batch_mlm[0], predicted_samples, batch_mlm[-1])
+                    mask_score, actual_sentences, predicted_sentences = self.model.eval_mlm(batch_mlm[0], predicted_samples, batch_mlm[-1])
                     mask_score_batch += mask_score
 
                     _, predicted_clas = self.model.forward(batch_clas)

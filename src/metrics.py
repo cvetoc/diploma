@@ -63,11 +63,21 @@ def str_scorer(predicted: np.ndarray, actual: np.ndarray, target_tokenizer):
 def mask_scorer(input_tensor: np.ndarray, predicted: np.ndarray, actual: np.ndarray, tokenizer):
     metric = Accuracy(task="multiclass", num_classes=len(tokenizer), ignore_index=-1)
     batch_metric = []
+    predicted_sentences = []
+    actual_sentences = []
 
     for a, b, c in zip(input_tensor, predicted, actual):
         predict = np.where(a == tokenizer.tokenizer.mask_token_id, b, -1)
         labels = np.where(a == tokenizer.tokenizer.mask_token_id, c, -1)
         batch_metric.append(float(metric(torch.tensor(predict), torch.tensor(labels))))
 
+        predict = predict[(predict != -1)]
+        labels = labels[(labels != -1)]
+
+        words_predicted = tokenizer.decode(predict)
+        words_actual = tokenizer.decode(labels)
+        predicted_sentences.append(words_predicted)
+        actual_sentences.append(words_actual)
+
     batch_metric = np.mean(batch_metric)
-    return batch_metric
+    return batch_metric, actual_sentences, predicted_sentences
