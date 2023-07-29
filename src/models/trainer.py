@@ -13,23 +13,35 @@ class Trainer:
     def train(self, train_dataloader, val_dataloader):
         try:
             iterations = tqdm(range(self.epoch_num))
-            iterations.set_postfix({'Score class': 0.0, 'Score str': 0.0, 'Score mask': 0.0,
+            iterations.set_postfix({'train score class': 0.0, 'train score mask': 0.0,
+                                    'val score class': 0.0, 'val score mask': 0.0,
                                     "train loss mlm": 0.0, "train loss class": 0.0,
                                     "val loss mlm": 0.0, "val loss class": 0.0})
             for epoch in iterations:
-                train_epoch_loss_mlm = 0
-                train_epoch_loss_clas = 0
+                train_epoch_loss_mlm, train_mask_score_batch = 0, 0
+                train_epoch_loss_clas, train_clas_score_batch = 0, 0
                 self.model.train()
                 for batch_mlm, batch_clas in zip(*train_dataloader):
                     train_loss_mlm, train_loss_clas = self.model.training_step(batch_mlm, batch_clas)
                     train_epoch_loss_mlm += train_loss_mlm
                     train_epoch_loss_clas += train_loss_clas
+
+                    predicted_samples, _ = self.model.forward(batch_mlm)
+
+                    mask_score, _, _ = self.model.eval_mlm(batch_mlm[0], predicted_samples, batch_mlm[-1])
+                    train_mask_score_batch += mask_score
+
+                    _, predicted_clas = self.model.forward(batch_clas)
+                    clas_score = self.model.eval_clas(predicted_clas, batch_clas[-1])
+                    train_clas_score_batch += clas_score
+
                 train_epoch_loss_mlm = train_epoch_loss_mlm / len(train_dataloader[0])
                 train_epoch_loss_clas = train_epoch_loss_clas / len(train_dataloader[1])
+                train_mask_score_batch = train_mask_score_batch / len(train_dataloader[0])
+                train_clas_score_batch = train_clas_score_batch / len(train_dataloader[1])
 
-                val_epoch_loss_mlm, val_epoch_acc = 0, 0
-                val_epoch_loss_clas, val_epoch_clas = 0, 0
-                str_score_batch, clas_score_batch, mask_score_batch = 0, 0, 0
+                val_epoch_loss_mlm, val_mask_score_batch = 0, 0
+                val_epoch_loss_clas, val_clas_score_batch = 0, 0
                 self.model.eval()
                 for batch_mlm, batch_clas in zip(*val_dataloader):
                     val_loss = self.model.validation_step_mlm(batch_mlm)
@@ -38,23 +50,21 @@ class Trainer:
                     val_epoch_loss_clas += val_loss
 
                     predicted_samples, _ = self.model.forward(batch_mlm)
-                    str_score, _, _ = self.model.eval_str(predicted_samples, batch_mlm[-1])
-                    str_score_batch += str_score
 
                     mask_score, actual_sentences, predicted_sentences = self.model.eval_mlm(batch_mlm[0], predicted_samples, batch_mlm[-1])
-                    mask_score_batch += mask_score
+                    val_mask_score_batch += mask_score
 
                     _, predicted_clas = self.model.forward(batch_clas)
                     clas_score = self.model.eval_clas(predicted_clas, batch_clas[-1])
-                    clas_score_batch += clas_score
+                    val_clas_score_batch += clas_score
 
                 val_epoch_loss_mlm = val_epoch_loss_mlm / len(val_dataloader[0])
                 val_epoch_loss_clas = val_epoch_loss_clas / len(train_dataloader[1])
-                str_score_batch = str_score_batch / len(val_dataloader[0])
-                mask_score_batch = mask_score_batch / len(val_dataloader[0])
-                clas_score_batch = clas_score_batch / len(val_dataloader[1])
+                val_mask_score_batch = val_mask_score_batch / len(val_dataloader[0])
+                val_clas_score_batch = val_clas_score_batch / len(val_dataloader[1])
 
-                iterations.set_postfix({'Score class': clas_score_batch, 'Score str': str_score_batch, 'Score mask': mask_score_batch,
+                iterations.set_postfix({'train score class': train_clas_score_batch, 'train score mask': train_mask_score_batch,
+                                        'val score class': val_clas_score_batch, 'val score mask': val_mask_score_batch,
                                         "train loss mlm": train_epoch_loss_mlm, "train loss class": train_epoch_loss_clas,
                                         "val loss mlm": val_epoch_loss_mlm, "val loss class": val_epoch_loss_clas})
 
@@ -67,9 +77,10 @@ class Trainer:
                                  "loss_val_class": val_epoch_loss_clas,
                                  "loss_train_mlm": train_epoch_loss_mlm,
                                  "loss_train_class": train_epoch_loss_clas,
-                                 "score_str": str_score_batch,
-                                 "score_clas": clas_score_batch,
-                                 "score_mask": mask_score_batch})
+                                 "val_score_clas": val_clas_score_batch,
+                                 "val_score_mask": val_mask_score_batch,
+                                 "train_score_clas": train_clas_score_batch,
+                                 "train_score_mask": train_mask_score_batch})
 
         except KeyboardInterrupt:
             pass
@@ -78,6 +89,7 @@ class Trainer:
         print(f"Last {epoch} epoch train loss class: ", train_epoch_loss_clas)
         print(f"Last {epoch} epoch val loss mlm: ", val_epoch_loss_mlm)
         print(f"Last {epoch} epoch val loss class: ", val_epoch_loss_clas)
-        print(f"Last {epoch} epoch val score str: ", str_score_batch)
-        print(f"Last {epoch} epoch val score clas: ", clas_score_batch)
-        print(f"Last {epoch} epoch val score mask: ", mask_score_batch)
+        print(f"Last {epoch} epoch train score clas: ", train_clas_score_batch)
+        print(f"Last {epoch} epoch train score mask: ", train_mask_score_batch)
+        print(f"Last {epoch} epoch val score clas: ", val_clas_score_batch)
+        print(f"Last {epoch} epoch val score mask: ", val_mask_score_batch)

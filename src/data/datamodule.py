@@ -41,7 +41,7 @@ class DataManager:
         target_sentences = []
         source_sentences = []
         for sample in tqdm(dev_data[:self.config["separate_batch"]], desc="Pars data"):
-            target_sentences.append(sample['masked_sparql'])
+            target_sentences.append(sample['masked_query'])
             source_sentences.append(sample['question'])
 
         sep_flag = int(len(target_sentences)/2)

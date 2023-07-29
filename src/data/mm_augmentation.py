@@ -1,6 +1,7 @@
 import numpy as np
 
 class MM_Augmentation:
+    # TODO обновить
     def __init__(self, tools):
 
         self.tools_methods: list = [x for x in dir(tools) if "__" not in x]
@@ -19,7 +20,7 @@ class MM_Augmentation:
         for i in range(size_of_transformations):
             augmented: list = self.augmentate(list(row))
 
-            return augmented[0]
+            return augmented[-1]
 
     def augmentate(self, string: list) -> list:
 

@@ -18,7 +18,7 @@ class UNIFTokenizer:
     def __call__(self, text_list_ru, text_list_ques):
 
         if self.pad_flag:
-            token_list = self.tokenizer(text_list_ru, text_list_ques,
+            token_list = self.tokenizer(text_list_ru, text_list_ques,   
                                         max_length=self.max_sent_len,
                                         padding='max_length',
                                         truncation=True,
@@ -33,7 +33,6 @@ class UNIFTokenizer:
         return len(self.tokenizer)
 
     def decode(self, token_list):
-        # TODO IRM
         token_list = self.tokenizer.decode(token_list)
         # декодер удаляет пробелы перед спецсимволами
         token_list = ' ?'.join(token_list.split('?'))

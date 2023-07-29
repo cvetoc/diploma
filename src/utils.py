@@ -2,11 +2,21 @@ import ast
 from matplotlib import pyplot as plt
 from prettytable import PrettyTable
 
+# self.logger.log({"loss_val_mlm": val_epoch_loss_mlm,
+#                                  "loss_val_class": val_epoch_loss_clas,
+#                                  "loss_train_mlm": train_epoch_loss_mlm,
+#                                  "loss_train_class": train_epoch_loss_clas,
+#                                  "val_score_clas": val_clas_score_batch,
+#                                  "val_score_mask": val_mask_score_batch,
+#                                  "train_score_clas": train_clas_score_batch,
+#                                  "train_score_mask": train_mask_score_batch})
 
 def graf(path):
 
+    # TODO доделать переписать
+
     data_graf = {'loss_val_mlm': [], 'loss_val_class': [], 'loss_train_mlm': [], 'loss_train_class': [],
-                 'score_str': [], 'score_clas': [], 'score_mask': []}
+                 'val_score_mask': [], 'val_score_clas': [], 'train_score_mask': [], 'train_score_clas': []}
 
     lebes = list(data_graf.keys())
 
@@ -45,13 +55,13 @@ def graf(path):
 
 
     ax3.title.set_text('Score mlm')
-    ax4.title.set_text('Score class')
-
-    ax3.plot(x, data_graf['score_str'], label='score str')
-    ax3.plot(x, data_graf['score_mask'], label='score mask')
-
-    ax4.plot(x, data_graf['score_clas'], label='score class')
+    ax3.plot(x, data_graf['val_score_mask'], label='val')
+    ax3.plot(x, data_graf['train_score_mask'], label='train')
     ax3.legend()
+
+    ax4.title.set_text('Score class')
+    ax4.plot(x, data_graf['val_score_clas'], label='val')
+    ax4.plot(x, data_graf['train_score_clas'], label='train')
     ax4.legend()
 
     plt.show()

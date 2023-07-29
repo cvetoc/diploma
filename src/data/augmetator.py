@@ -3,6 +3,7 @@ import string
 from typing import NewType
 
 class Augmetator_func_tool:
+    # TODO обновить
     __char = NewType('char', str)
 
     __string_ru: str = (
@@ -42,8 +43,8 @@ class Augmetator_func_tool:
         """
         x: int = np.random.randint(len(list_char))
         size = np.random.randint(1, 4)
-        char_: str = self.__generate_random_string(size=size)[0]
-        list_char.insert(x, char_)
+        chars: str = self.__generate_random_string(size=size)[0]
+        list_char.insert(x, chars)
         return list_char
 
     @classmethod
@@ -51,8 +52,8 @@ class Augmetator_func_tool:
         """
         Случайный набор символов
         """
-        string: list = list(np.random.choice(self.__chars, size=size))
-        return string
+        string_: list = list(np.random.choice(self.__chars, size=size))
+        return string_
 
     @staticmethod
     def swap_words(list_char: list[__char]) -> list[__char]:
