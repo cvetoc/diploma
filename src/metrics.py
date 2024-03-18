@@ -43,14 +43,15 @@ def clas_scorer(predicted: np.ndarray, actual: np.ndarray):
     return batch_metric
 
 def str_scorer(predicted: np.ndarray, actual: np.ndarray, target_tokenizer):
-    metric = Accuracy(task="multiclass", num_classes=len(target_tokenizer))
+    metric = Accuracy(task="multiclass", num_classes=len(target_tokenizer), ignore_index=-1)
     batch_metric = []
     predicted_sentences = []
     actual_sentences = []
 
     for a, b in zip(predicted, actual):
-        # labels = torch.where(decoder_outputs == self.tokenizer.tokenizer.mask_token_id, Y_tensor, -100)
-        batch_metric.append(float(metric(torch.tensor(a), torch.tensor(b))))
+        predict = np.where(b != target_tokenizer.tokenizer.pad_token_id, a, -1)
+        labels = np.where(b != target_tokenizer.tokenizer.pad_token_id, b, -1)
+        batch_metric.append(float(metric(torch.tensor(predict), torch.tensor(labels))))
 
         words_predicted = target_tokenizer.decode(a)
         words_actual = target_tokenizer.decode(b)

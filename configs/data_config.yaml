@@ -1,8 +1,9 @@
 ---
 path_repository: ""
 data_name_file: "_split"
-data_language: "russian_"
-pre_train_tokenizer: "cointegrated/rubert-tiny"
-batch_size: 32
-max_sent_len: 100
+data_language: ""
+pre_train_tokenizer: "FacebookAI/roberta-base" #"FacebookAI/roberta-base" #"bert-base-cased" #"cointegrated/rubert-tiny"
+path_data_schema: "data/table_id2new_attrs_for_parsing.json"
+batch_size: 2 #16
+max_sent_len: 40 # 240
 separate_batch: -1

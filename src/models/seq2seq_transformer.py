@@ -31,9 +31,10 @@ class Seq2SeqTransformer(nn.Module):
         #     for name, param in self.named_parameters():
         #         param.copy_(torch.randn(param.size()))
 
+        # TODO: ADAM
         self.optimizer = Adafactor(self.model.parameters(), relative_step=True)
         self.scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=sched_step, gamma=sched_gamma)
-        self.loss_tok = nn.CrossEntropyLoss()#(ignore_index=tokenizer.tokenizer.pad_token_id)
+        self.loss_tok = nn.CrossEntropyLoss() # (ignore_index=tokenizer.tokenizer.pad_token_id)
         self.loss_clas = nn.CrossEntropyLoss()
 
         self.sm = nn.Softmax(dim=1)
@@ -97,6 +98,29 @@ class Seq2SeqTransformer(nn.Module):
         class_outputs = class_outputs.view(-1, class_outputs.size(-1))
         clas = clas.view(-1)
         loss = self.loss_clas(class_outputs, clas)
+        return loss.item()
+
+    def training_step_seq2seq(self, batch):
+        self.optimizer.zero_grad()
+
+        X_tensor, _, _, Y_tensor = batch
+        decoder_outputs, _ = self.forward(batch)
+        decoder_outputs = decoder_outputs.view(-1, decoder_outputs.size(-1))
+        labels = Y_tensor.view(-1)
+        # labels = torch.where(labels != self.tokenizer.tokenizer.pad_token_id, labels, -100)
+        loss = self.loss_tok(decoder_outputs, labels)
+
+        loss.backward()
+        self.optimizer.step()
+        return loss.item()
+
+    def validation_step_seq2seq(self, batch):
+        X_tensor, _, _, Y_tensor = batch
+        decoder_outputs, _ = self.forward(batch)
+        decoder_outputs = decoder_outputs.view(-1, decoder_outputs.size(-1))
+        labels = Y_tensor.view(-1)
+        # labels = torch.where(labels != self.tokenizer.tokenizer.pad_token_id, labels, -100)
+        loss = self.loss_tok(decoder_outputs, labels)
         return loss.item()
 
     def eval_str(self, predicted_ids_list, target_tensor):

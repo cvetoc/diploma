@@ -1,7 +1,7 @@
 import torch
 import yaml
 from src.models import trainer
-from src.data.datamodule import DataManager
+from src.data.datamodule import DataManager_pretrain
 from src.txt_logger import TXTLogger
 from src.models.seq2seq_transformer import Seq2SeqTransformer
 from src.utils import graf
@@ -16,7 +16,7 @@ def train(prin=False, filename="progress_log.txt"):
 
     data_config = yaml.load(open("configs/data_config.yaml", 'r', encoding='utf-8'), Loader=yaml.Loader)
     data_path = lambda x: data_config["path_repository"] + "data/" + data_config["data_language"] + str(x) + data_config["data_name_file"] + ".json"
-    dm = DataManager(data_config, DEVICE)
+    dm = DataManager_pretrain(data_config, DEVICE)
     train_dataloader_mlm, train_dataloader_shift = dm.prepare_data(path_data=data_path("train"), drop_last=False, aug=0.3)
     dev_dataloader_mlm, dev_dataloader_shift = dm.prepare_data(path_data=data_path("dev"), drop_last=True)
 
@@ -41,7 +41,7 @@ def train(prin=False, filename="progress_log.txt"):
             dev_dataloader_shift = [b]
             break
 
-    trainer_cls.train((train_dataloader_mlm, train_dataloader_shift), (dev_dataloader_mlm, dev_dataloader_shift))
+    trainer_cls.pre_train((train_dataloader_mlm, train_dataloader_shift), (dev_dataloader_mlm, dev_dataloader_shift))
 
     return model, dm, (train_dataloader_mlm, train_dataloader_shift), (dev_dataloader_mlm, dev_dataloader_shift)
 

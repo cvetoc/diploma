@@ -11,7 +11,7 @@ from prettytable import PrettyTable
 #                                  "train_score_clas": train_clas_score_batch,
 #                                  "train_score_mask": train_mask_score_batch})
 
-def graf(path):
+def pre_graf(path):
 
     # TODO доделать переписать
 
@@ -63,5 +63,49 @@ def graf(path):
     ax4.plot(x, data_graf['val_score_clas'], label='val')
     ax4.plot(x, data_graf['train_score_clas'], label='train')
     ax4.legend()
+
+    plt.show()
+
+def graf(path):
+
+    # TODO доделать переписать
+
+    data_graf = {'loss_val': [], 'loss_train': [],
+                 'val_score': [], 'train_score': []}
+
+    lebes = list(data_graf.keys())
+
+    with open(path, 'r') as f:
+        description_model = f.readline()
+        for lin in f:
+            line = ast.literal_eval(lin)
+            for leb in lebes:
+                data_graf[leb].append(line[leb])
+
+    description_model = ast.literal_eval(description_model)
+
+    table_print = PrettyTable()
+    table_print.field_names = ["параметры", "значения"]
+
+    for i in description_model:
+        table_print.add_row((i, description_model[i]))
+
+    print(table_print)
+
+    fig, (ax1, ax2) = plt.subplots(2, 1)
+
+    fig.set_size_inches(8, 8, forward=True)
+
+    x = range(1, len(data_graf[lebes[0]]) + 1)
+
+    ax1.title.set_text('Loss')
+    ax1.plot(x, data_graf['loss_val'], label='val')
+    ax1.plot(x, data_graf['loss_train'], label='train')
+    ax1.legend()
+
+    ax2.title.set_text('Score')
+    ax2.plot(x, data_graf['val_score'], label='val')
+    ax2.plot(x, data_graf['train_score'], label='train')
+    ax2.legend()
 
     plt.show()
