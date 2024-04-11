@@ -3,10 +3,10 @@ from torch.utils.data import Dataset
 
 
 class MTDataset_mlm(Dataset):
-    def __init__(self, tokenized_source_list, tokenized_target_list, dev):
+    def __init__(self, tokenized_source_list, tokenized_target_list, device):
         self.tokenized_source_list = tokenized_source_list
         self.tokenized_target_list = tokenized_target_list
-        self.device = dev
+        self.device = device
 
     def __len__(self):
         return len(self.tokenized_source_list)
@@ -22,10 +22,10 @@ class MTDataset_mlm(Dataset):
 
 
 class MTDataset_shift(Dataset):
-    def __init__(self, tokenized_source_list, tokenized_target_list, dev):
+    def __init__(self, tokenized_source_list, tokenized_target_list, device):
         self.tokenized_source_list = tokenized_source_list
         self.tokenized_target_list = tokenized_target_list
-        self.device = dev
+        self.device = device
 
     def __len__(self):
         return len(self.tokenized_source_list)
@@ -41,10 +41,10 @@ class MTDataset_shift(Dataset):
 
 
 class MTDataset(Dataset):
-    def __init__(self, tokenized_source_list, tokenized_target_list, dev):
+    def __init__(self, tokenized_source_list, tokenized_target_list, device):
         self.tokenized_source_list = tokenized_source_list
         self.tokenized_target_list = tokenized_target_list
-        self.device = dev
+        self.device = device
 
     def __len__(self):
         return len(self.tokenized_source_list)

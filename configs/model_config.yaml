@@ -1,7 +1,7 @@
 ---
-pre_train_model: "FacebookAI/roberta-base" # "FacebookAI/roberta-base" #"bert-base-cased" #"cointegrated/rubert-tiny"
-learning_rate: 0.001
-sched_step: 100
+pre_train_model: "bert-base-cased" # "FacebookAI/roberta-base" #"bert-base-cased" #"cointegrated/rubert-tiny"
+learning_rate: 0.00001
+sched_step: 30
 sched_gamma: 0.1
-epoch_num: 400
-try_one_batch: True
+epoch_num: 30
+try_one_batch: False

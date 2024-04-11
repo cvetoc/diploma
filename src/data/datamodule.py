@@ -137,10 +137,10 @@ class DataManager_pretrain:
                                             tqdm(zip(source_sentences_shift, target_sentences_shift))]
 
         dataset_mlm = MTDataset_mlm(tokenized_source_list=tokenized_source_sentences_mlm,
-                                    tokenized_target_list=tokenized_target_sentences_mlm, dev=self.device)
+                                    tokenized_target_list=tokenized_target_sentences_mlm, device=self.device)
 
         dataset_shift = MTDataset_shift(tokenized_source_list=tokenized_source_sentences_shift,
-                                        tokenized_target_list=class_label, dev=self.device)
+                                        tokenized_target_list=class_label, device=self.device)
 
         dataloader_mlm = DataLoader(dataset_mlm, shuffle=True,
                                     batch_size=self.config["batch_size"], drop_last=drop_last)
@@ -158,6 +158,9 @@ class DataManager:
         self.config = config
         self.device = device
 
+        self.db2attr_dict = json.load(open(os.path.join(self.config["path_repository"],
+                                                        self.config["path_data_schema"]), 'r', encoding="utf8"))
+
         if self.tokenizer is None:
             self.tokenizer = UNIFTokenizer(path_tok=self.config["path_repository"] + "data/query_vocab.json",
                                            pre_train_name=self.config["pre_train_tokenizer"],
@@ -169,9 +172,16 @@ class DataManager:
         dev_data = json.load(open(os.path.join(path_data), 'r', encoding="utf-8"))
         target_sentences = []
         source_sentences = []
+        kb_id_sentences = []
         for sample in tqdm(dev_data[:self.config["separate_batch"]], desc="Pars data"):
             target_sentences.append(sample['masked_query'])
             source_sentences.append(sample['question'])
+            kb_id_sentences.append(sample['kb_id'])
+
+        # Add schema
+
+        kb_id_sentences = prepare_sql_input(kb_id_sentences, self.db2attr_dict)
+        source_sentences = [i + j for i, j in zip(source_sentences, kb_id_sentences)]
 
         # DataLoader
 
@@ -179,7 +189,7 @@ class DataManager:
         tokenized_target_sentences = [self.tokenizer.tkr(i) for i in target_sentences]
 
         dataset = MTDataset(tokenized_source_list=tokenized_source_sentences,
-                            tokenized_target_list=tokenized_target_sentences, dev=self.device)
+                            tokenized_target_list=tokenized_target_sentences, device=self.device)
 
         dataloader = DataLoader(dataset, shuffle=True, batch_size=self.config["batch_size"], drop_last=drop_last)
 
