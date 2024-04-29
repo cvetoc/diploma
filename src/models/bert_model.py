@@ -39,8 +39,8 @@ class Seq2SeqTransformer(nn.Module):
 
         self.model.resize_token_embeddings(len(self.tokenizer))
 
-        #         self.linear_mlm = nn.Linear(768, len(self.tokenizer), bias=True)
-        #         self.linear_nsp = nn.Linear(768, 2, bias=True)
+        self.linear_mlm = nn.Linear(768, len(self.tokenizer), bias=True)
+        self.linear_nsp = nn.Linear(768, 2, bias=True)
 
         #         self.embedding_src = nn.Embedding(len(self.tokenizer), 768)
         self.embedding_trg = nn.Embedding(len(self.tokenizer), 768)
@@ -158,51 +158,66 @@ class Seq2SeqTransformer(nn.Module):
         # mlm loss
         X_tensor, _, _, Y_tensor = batch_mlm
         decoder_outputs, _ = self.forward(batch_mlm)
+        predict_output_mlm = decoder_outputs.clone()
         decoder_outputs = decoder_outputs.view(-1, decoder_outputs.size(-1))
+        
         decoder_input = X_tensor.view(-1)
         labels = Y_tensor.view(-1)
         # TODO учить на новых токенах
+        # decoder_outputs_ind = (decoder_input == self.tokenizer.tokenizer.mask_token_id).nonzero(as_tuple=True)[0]
+        
         labels = torch.where(decoder_input == self.tokenizer.tokenizer.mask_token_id, labels, -100)
+
+        # decoder_outputs = torch.index_select(decoder_outputs, 0, decoder_outputs_ind)
+        
         # https://discuss.huggingface.co/t/bertformaskedlm-s-loss-and-scores-how-the-loss-is-computed/607/2
-        loss_mlm = self.loss_tok(decoder_outputs, labels)
+        loss_mlm = self.loss_tok(decoder_outputs*10, labels)
 
         # nsp loss
         # TODO возможно косяк так как плохо обучается + есть переобучение (видно на val) (возможно в данных лик)
         _, _, _, clas = batсh_nsp
         _, class_outputs = self.forward(batсh_nsp)
+        predict_output_nsp = class_outputs.clone()
         class_outputs = class_outputs.view(-1, class_outputs.size(-1))
         clas = clas.view(-1)
-        loss_nsp = self.loss_clas(class_outputs, clas)
+        loss_nsp = self.loss_clas(class_outputs*10, clas)
 
         loss = loss_mlm + loss_nsp
 
         loss.backward()
         self.optimizer.step()
-        return loss_mlm.item(), loss_nsp.item()
+        return loss_mlm.item(), loss_nsp.item(), predict_output_mlm, predict_output_nsp
 
     def validation_step_mlm(self, batch):
         X_tensor, _, _, Y_tensor = batch
         decoder_outputs, _ = self.forward(batch)
+        predict_output = decoder_outputs.clone()
         decoder_outputs = decoder_outputs.view(-1, decoder_outputs.size(-1))
         decoder_input = X_tensor.view(-1)
         labels = Y_tensor.view(-1)
         labels = torch.where(decoder_input == self.tokenizer.tokenizer.mask_token_id, labels, -100)
-        loss = self.loss_tok(decoder_outputs, labels)
-        return loss.item()
+        
+        # decoder_outputs_ind = (decoder_input == self.tokenizer.tokenizer.mask_token_id).nonzero(as_tuple=True)[0]
+        # decoder_outputs = torch.index_select(decoder_outputs, 0, decoder_outputs_ind)
+
+        loss = self.loss_tok(decoder_outputs*10, labels)
+        return loss.item(), predict_output
 
     def validation_step_clas(self, batch):
         X_tensor, _, _, clas = batch
         _, class_outputs = self.forward(batch)
+        predict_output = class_outputs.clone()
         class_outputs = class_outputs.view(-1, class_outputs.size(-1))
         clas = clas.view(-1)
-        loss = self.loss_clas(class_outputs, clas)
-        return loss.item()
+        loss = self.loss_clas(class_outputs*10, clas)
+        return loss.item(), predict_output
 
     def training_step_seq2seq(self, batch):
         self.optimizer.zero_grad()
 
         X_tensor, _, Y_tensor, _ = batch
         decoder_outputs = self.forward_generation(batch)
+        predict_output = decoder_outputs.clone()
         decoder_outputs = decoder_outputs.reshape(-1, decoder_outputs.size(-1))
         labels = Y_tensor[:, 1:].reshape(-1)
         labels = torch.where(labels != self.tokenizer.tokenizer.pad_token_id, labels, -100)
@@ -224,11 +239,13 @@ class Seq2SeqTransformer(nn.Module):
         #     break
         self.optimizer.step()
         # print(self.optimizer.param_groups[0]['lr'])
-        return loss.item()
+        return loss.item(), predict_output
 
     def validation_step_seq2seq(self, batch):
         X_tensor, _, Y_tensor, _ = batch
         decoder_outputs = self.forward_generation(batch)
+        
+        predict_output = decoder_outputs.clone()
         decoder_outputs = decoder_outputs.reshape(-1, decoder_outputs.size(-1))
         labels = Y_tensor[:, 1:].reshape(-1)  #
         labels = torch.where(labels != self.tokenizer.tokenizer.pad_token_id, labels, -100)
@@ -236,7 +253,7 @@ class Seq2SeqTransformer(nn.Module):
 
         # _, decoder_outputs = self.forward_generation(batch)
         # loss = decoder_outputs.loss
-        return loss.item()
+        return loss.item(), predict_output
 
     def eval_str(self, predicted_ids_list, target_tensor):
         predicted = predicted_ids_list.clone()
@@ -251,9 +268,9 @@ class Seq2SeqTransformer(nn.Module):
     def eval_mlm(self, input_ids_list, predicted_ids_list, target_tensor):
         predicted = predicted_ids_list.clone()
         predicted = torch.argmax(predicted, dim=-1)
-        input_tensor = input_ids_list.squeeze(-1).detach().cpu().numpy()
-        predicted = predicted.reshape((-1)).detach().cpu().numpy()
-        actuals = target_tensor.reshape((-1)).detach().cpu().numpy()
+        input_tensor = input_ids_list.detach().cpu().numpy()
+        predicted = predicted.detach().cpu().numpy()
+        actuals = target_tensor.detach().cpu().numpy()
         mlm_score, actual_sentences, predicted_sentences = metrics.mask_scorer(input_tensor=input_tensor,
                                                                                predicted=predicted, actual=actuals,
                                                                                tokenizer=self.tokenizer

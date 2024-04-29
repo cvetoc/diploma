@@ -4,6 +4,7 @@ import os
 from random import randint
 import numpy as np
 import re
+import copy
 
 from tqdm import tqdm
 
@@ -60,35 +61,35 @@ class DataManager_pretrain:
         source_kb_id_shift = kb_id_sentences[sep_flag:2 * sep_flag].copy()
         source_sentences_shift = source_sentences[sep_flag:2 * sep_flag].copy()
 
-        if aug is not None:
-            aug_target_sentences, aug_source_sentences = self._aug_call(target_sentences_mlm, source_sentences_mlm, aug)
+#         if aug is not None:
+#             aug_target_sentences, aug_source_sentences = self._aug_call(target_sentences_mlm, source_sentences_mlm, aug)
 
-            target_sentences_mlm = target_sentences_mlm + aug_target_sentences
-            source_sentences_mlm = source_sentences_mlm + aug_source_sentences
+#             target_sentences_mlm = target_sentences_mlm + aug_target_sentences
+#             source_sentences_mlm = source_sentences_mlm + aug_source_sentences
 
-            aug_target_sentences, aug_source_sentences = self._aug_call(target_sentences_shift, source_sentences_shift,
-                                                                        aug)
+#             aug_target_sentences, aug_source_sentences = self._aug_call(target_sentences_shift, source_sentences_shift,
+#                                                                         aug)
 
-            target_sentences_shift = target_sentences_shift + aug_target_sentences
-            source_sentences_shift = source_sentences_shift + aug_source_sentences
+#             target_sentences_shift = target_sentences_shift + aug_target_sentences
+#             source_sentences_shift = source_sentences_shift + aug_source_sentences
 
-        # MLM
+        # MLM_last
 
-        source_sentences_true = source_sentences_mlm.copy()
-        target_sentences_mlm_temp = []
-        for sentence in tqdm(target_sentences_mlm, desc="data mlm"):
-            temp_list = sentence.split()
-            index_temp_list = set(range(len(temp_list)))
-            for i, word in enumerate(temp_list):
-                if not re.search('[a-zA-Z0-9]', word):
-                    index_temp_list = index_temp_list - set([i])
+#         source_sentences_true = source_sentences_mlm.copy()
+#         target_sentences_mlm_temp = []
+#         for sentence in tqdm(target_sentences_mlm, desc="data mlm"):
+#             temp_list = sentence.split()
+#             index_temp_list = set(range(len(temp_list)))
+#             for i, word in enumerate(temp_list):
+#                 if not re.search('[a-zA-Z0-9]', word):
+#                     index_temp_list = index_temp_list - set([i])
 
-            index_masc = np.random.choice(list(index_temp_list), max(1, round(len(temp_list) * 0.15)), replace=False)
-            for word_i in index_masc:
-                temp_list[word_i] = self.tokenizer.tokenizer.mask_token
-            target_sentences_mlm_temp.append(' '.join(temp_list))
-        target_sentences_mlm = target_sentences_mlm_temp.copy()
-        del target_sentences_mlm_temp
+#             index_masc = np.random.choice(list(index_temp_list), max(1, round(len(temp_list) * 0.15)), replace=False)
+#             for word_i in index_masc:
+#                 temp_list[word_i] = self.tokenizer.tokenizer.mask_token
+#             target_sentences_mlm_temp.append(' '.join(temp_list))
+#         target_sentences_mlm = target_sentences_mlm_temp.copy()
+#         del target_sentences_mlm_temp
 
         # # Sparc
         # source_sentences_true = source_sentences_mlm.copy()
@@ -122,7 +123,6 @@ class DataManager_pretrain:
 
         source_kb_id_mlm = prepare_sql_input(source_kb_id_mlm, self.db2attr_dict)
         source_sentences_mlm = [i + j for i, j in zip(source_sentences_mlm, source_kb_id_mlm)]
-        source_sentences_true = [i + j for i, j in zip(source_sentences_true, source_kb_id_mlm)]
 
         source_kb_id_shift = prepare_sql_input(source_kb_id_shift, self.db2attr_dict)
         source_sentences_shift = [i + j for i, j in zip(source_sentences_shift, source_kb_id_shift)]
@@ -130,11 +130,19 @@ class DataManager_pretrain:
         # DataLoader
 
         tokenized_source_sentences_mlm = [self.tokenizer(i, j) for i, j in
-                                          tqdm(zip(source_sentences_mlm, target_sentences_mlm))]
-        tokenized_target_sentences_mlm = [self.tokenizer(i, j) for i, j in
-                                          tqdm(zip(source_sentences_true, target_sentences))]
+                                          tqdm(zip(source_sentences_mlm, target_sentences_mlm), desc="Tokenizer mlm")]
         tokenized_source_sentences_shift = [self.tokenizer(i, j) for i, j in
-                                            tqdm(zip(source_sentences_shift, target_sentences_shift))]
+                                            tqdm(zip(source_sentences_shift, target_sentences_shift), desc="Tokenizer shift")]
+        
+        # MLM
+        tokenized_target_sentences_mlm = copy.deepcopy(tokenized_source_sentences_mlm)
+        for i in tqdm(range(len(tokenized_source_sentences_mlm)), desc="Added mask"):
+            ind_q = (tokenized_source_sentences_mlm[i]['token_type_ids'][0] == 1).nonzero(as_tuple=True)[0][:-1]
+            index_masc = np.random.choice(list(ind_q), max(1, round(len(ind_q) * 0.15)), replace=False)
+            for word_i in index_masc:
+                tokenized_source_sentences_mlm[i]['input_ids'][0][word_i] = self.tokenizer.tokenizer.mask_token_id
+        
+        # Dataset
 
         dataset_mlm = MTDataset_mlm(tokenized_source_list=tokenized_source_sentences_mlm,
                                     tokenized_target_list=tokenized_target_sentences_mlm, device=self.device)
@@ -142,6 +150,8 @@ class DataManager_pretrain:
         dataset_shift = MTDataset_shift(tokenized_source_list=tokenized_source_sentences_shift,
                                         tokenized_target_list=class_label, device=self.device)
 
+        # DataLoader
+        
         dataloader_mlm = DataLoader(dataset_mlm, shuffle=True,
                                     batch_size=self.config["batch_size"], drop_last=drop_last)
 

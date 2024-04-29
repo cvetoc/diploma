@@ -23,21 +23,17 @@ class Trainer:
                 train_epoch_loss_clas, train_clas_score_batch = 0, 0
                 self.model.train()
                 for batch_mlm, batch_clas in zip(*train_dataloader):
-                    train_loss_mlm, train_loss_clas = self.model.training_step(batch_mlm, batch_clas)
+                    train_loss_mlm, train_loss_clas, predict_output_mlm, predict_output_nsp = self.model.training_step(batch_mlm, batch_clas)
                     train_epoch_loss_mlm += train_loss_mlm
                     train_epoch_loss_clas += train_loss_clas
 
-                    predicted_samples = self.model.forward(batch_mlm)
-
-                    mask_score, _, _ = self.model.eval_mlm(batch_mlm[0], predicted_samples, batch_mlm[-1])
+                    mask_score, _, _ = self.model.eval_mlm(batch_mlm[0], predict_output_mlm, batch_mlm[-1])
                     train_mask_score_batch += mask_score
 
-                    _, predicted_clas = self.model.forward(batch_clas)
-
-                    clas_score = self.model.eval_clas(predicted_clas, batch_clas[-1])
-
+                    clas_score = self.model.eval_clas(predict_output_nsp, batch_clas[-1])
                     train_clas_score_batch += clas_score
 
+                self.model.scheduler.step()
                 train_epoch_loss_mlm = train_epoch_loss_mlm / len(train_dataloader[0])
                 train_epoch_loss_clas = train_epoch_loss_clas / len(train_dataloader[1])
                 train_mask_score_batch = train_mask_score_batch / len(train_dataloader[0])
@@ -47,20 +43,18 @@ class Trainer:
                 val_epoch_loss_clas, val_clas_score_batch = 0, 0
                 self.model.eval()
                 for batch_mlm, batch_clas in zip(*val_dataloader):
-                    val_loss = self.model.validation_step_mlm(batch_mlm)
+                    val_loss, predict_output_mlm = self.model.validation_step_mlm(batch_mlm)
                     val_epoch_loss_mlm += val_loss
-                    val_loss = self.model.validation_step_clas(batch_clas)
+                    
+                    val_loss, predict_output_nsp = self.model.validation_step_clas(batch_clas)
                     val_epoch_loss_clas += val_loss
 
-                    predicted_samples = self.model.forward(batch_mlm)
-
                     mask_score, actual_sentences, predicted_sentences = self.model.eval_mlm(batch_mlm[0],
-                                                                                            predicted_samples,
+                                                                                            predict_output_mlm,
                                                                                             batch_mlm[-1])
                     val_mask_score_batch += mask_score
 
-                    _, predicted_clas = self.model.forward(batch_clas)
-                    clas_score = self.model.eval_clas(predicted_clas, batch_clas[-1])
+                    clas_score = self.model.eval_clas(predict_output_nsp, batch_clas[-1])
                     val_clas_score_batch += clas_score
 
                 val_epoch_loss_mlm = val_epoch_loss_mlm / len(val_dataloader[0])
@@ -111,10 +105,10 @@ class Trainer:
                 self.model.train()
 
                 for batch in train_dataloader:
-                    train_loss = self.model.training_step_seq2seq(batch)
+                    train_loss, predicted_samples = self.model.training_step_seq2seq(batch)
                     train_epoch_loss += train_loss
 
-                    predicted_samples = self.model.forward_generation(batch)
+                    # predicted_samples = self.model.forward_generation(batch)
 
                     mask_score, _, _ = self.model.eval_str(predicted_samples, batch[2])
                     train_score_batch += mask_score
@@ -126,10 +120,10 @@ class Trainer:
                 val_epoch_loss, val_score_batch = 0, 0
                 self.model.eval()
                 for batch in val_dataloader:
-                    val_loss = self.model.validation_step_seq2seq(batch)
+                    val_loss, predicted_samples = self.model.validation_step_seq2seq(batch)
                     val_epoch_loss += val_loss
 
-                    predicted_samples = self.model.forward_generation(batch)
+                    # predicted_samples = self.model.forward_generation(batch)
 
                     mask_score, actual_sentences, predicted_sentences = self.model.eval_str(predicted_samples, batch[2])
                     val_score_batch += mask_score
