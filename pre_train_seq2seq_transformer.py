@@ -3,7 +3,6 @@ import yaml
 from src.models import trainer
 from src.data.datamodule import DataManager_pretrain, DataManager
 from src.txt_logger import TXTLogger
-# from src.models.seq2seq_transformer import Seq2SeqTransformer
 from src.models.bert_model import Seq2SeqTransformer
 from src.utils import pre_graf, graf
 import copy
@@ -26,8 +25,9 @@ def get_model(model_state_path=None, tokenizer_state_path=None):
 
     dm_ = DataManager(data_config, DEVICE)
     dm_.tokenizer.tokenizer = dm_.tokenizer.tokenizer.from_pretrained(tokenizer_state_path)
-    dev_dataloader = dm_.prepare_data(path_data=data_path("train"), drop_last=False)
-    test_dataloader = dm_.prepare_data(path_data=data_path("dev"), drop_last=True)
+    train_dataloader = dm_.prepare_data(path_data=data_path("train"), drop_last=False)
+    dev_dataloader = dm_.prepare_data(path_data=data_path("dev"), drop_last=False)
+    test_dataloader = dm_.prepare_data(path_data=data_path("test"), drop_last=False)
 
     model = Seq2SeqTransformer(device=DEVICE,
                                tokenizer=dm_.tokenizer,
@@ -40,7 +40,7 @@ def get_model(model_state_path=None, tokenizer_state_path=None):
     if model_state_path:
         model.load_state_dict(torch.load(model_state_path, map_location=torch.device(DEVICE)))
 
-    return model, dm_, (dev_dataloader, test_dataloader)
+    return model, dm_, (train_dataloader, dev_dataloader, test_dataloader)
 
 
 def train(prin=False, filename="progress_log_train.txt", model_state_path=None, freez=False):
@@ -145,7 +145,7 @@ def pre_train(prin=False, filename="progress_log_pre_train.txt"):
 
     return model, dm, ((train_dataloader_mlm, train_dataloader_shift), (dev_dataloader_mlm, dev_dataloader_shift))
 
-def train_pre_train(model_state_path=None, tokenizer_state_path=None, prin=False, filename="progress_log_train.txt", model_state_path=None, freez=False):
+def train_pre_train(model_state_path=None, tokenizer_state_path=None, prin=False, filename="progress_log_train.txt", freez=False):
     if torch.cuda.is_available():
         DEVICE = "cuda"
     else:

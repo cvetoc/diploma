@@ -109,3 +109,65 @@ def graf(path):
     ax2.legend()
 
     plt.show()
+    
+def duble_graf(path, pre_path):
+    data_graf = {'loss_val': [], 'loss_train': [],
+                 'val_score': [], 'train_score': []}
+    data_pre_graf = {'loss_val': [], 'loss_train': [],
+                 'val_score': [], 'train_score': []}
+
+    lebes = list(data_graf.keys())
+
+    with open(path, 'r') as f:
+        description_model = f.readline()
+        for lin in f:
+            line = ast.literal_eval(lin)
+            for leb in lebes:
+                data_graf[leb].append(line[leb])
+    with open(pre_path, 'r') as f:
+        description_pre_model = f.readline()
+        for lin in f:
+            line = ast.literal_eval(lin)
+            for leb in lebes:
+                data_pre_graf[leb].append(line[leb])
+                
+
+    description_model = ast.literal_eval(description_model)
+    description_pre_model = ast.literal_eval(description_pre_model)
+
+    table_print = PrettyTable()
+    table_print.field_names = ["параметры", "значения"]
+    for i in description_model:
+        table_print.add_row((i, description_model[i]))
+        
+    table_print_pre = PrettyTable()
+    table_print_pre.field_names = ["параметры", "значения"]
+    for i in description_pre_model:
+        table_print_pre.add_row((i, description_pre_model[i]))
+
+    print("Train")
+    print(table_print)
+    print("Pre train")
+    print(table_print_pre)
+
+    fig, (ax1, ax2) = plt.subplots(2, 1)
+
+    fig.set_size_inches(8, 8, forward=True)
+
+    x = range(1, len(data_graf[lebes[0]]) + 1)
+
+    ax1.title.set_text('Loss')
+    ax1.plot(x, data_graf['loss_val'], label='val')
+    ax1.plot(x, data_graf['loss_train'], label='train')
+    ax1.plot(x, data_pre_graf['loss_val'], label='pre_val')
+    ax1.plot(x, data_pre_graf['loss_train'], label='pre_train')
+    ax1.legend()
+
+    ax2.title.set_text('Score')
+    ax2.plot(x, data_graf['val_score'], label='val')
+    ax2.plot(x, data_graf['train_score'], label='train')
+    ax2.plot(x, data_pre_graf['val_score'], label='pre_val')
+    ax2.plot(x, data_pre_graf['train_score'], label='pre_train')
+    ax2.legend()
+
+    plt.show()
