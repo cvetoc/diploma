@@ -1,7 +1,7 @@
 ---
 path_repository: ""
-data_name_file: "_split" #"_split" #"_split"
-data_language: "_75" #"" #"pauq_"
+data_name_file: "_split" #"_split" #"_75"
+data_language: "" #"" #"pauq_"
 pre_train_tokenizer: "bert-base-cased" #"FacebookAI/roberta-base" #"bert-base-cased" #"cointegrated/rubert-tiny"
 path_data_schema: "data/table_id2new_attrs_for_parsing.json" #"data/pauq_tables.json" #"data/table_id2new_attrs_for_parsing.json"
 batch_size: 16 #16
