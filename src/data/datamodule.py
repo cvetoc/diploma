@@ -24,7 +24,7 @@ class DataManager_pretrain:
         self.db2attr_dict = json.load(open(os.path.join(self.config["path_repository"],
                                                         self.config["path_data_schema"]), 'r', encoding="utf8"))
 
-        self.tokenizer = UNIFTokenizer(path_tok=self.config["path_repository"] + "data/query_vocab.json",
+        self.tokenizer = UNIFTokenizer(path_tok=self.config["path_repository"] + self.config["path_query_vocab"], 
                                        pre_train_name=self.config["pre_train_tokenizer"],
                                        pad_flag=True,
                                        max_length=self.config["max_sent_len"])
@@ -172,7 +172,7 @@ class DataManager:
                                                         self.config["path_data_schema"]), 'r', encoding="utf8"))
 
         if self.tokenizer is None:
-            self.tokenizer = UNIFTokenizer(path_tok=self.config["path_repository"] + "data/query_vocab.json",
+            self.tokenizer = UNIFTokenizer(path_tok=self.config["path_repository"] + self.config["path_query_vocab"],
                                            pre_train_name=self.config["pre_train_tokenizer"],
                                            pad_flag=True,
                                            max_length=self.config["max_sent_len"])

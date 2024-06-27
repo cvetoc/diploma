@@ -25,7 +25,7 @@ def get_model(model_state_path=None, tokenizer_state_path=None):
 
     dm_ = DataManager(data_config, DEVICE)
     dm_.tokenizer.tokenizer = dm_.tokenizer.tokenizer.from_pretrained(tokenizer_state_path)
-    train_dataloader = dm_.prepare_data(path_data=data_path("train"), drop_last=False)
+    # train_dataloader = dm_.prepare_data(path_data=data_path("train"), drop_last=False)
     dev_dataloader = dm_.prepare_data(path_data=data_path("dev"), drop_last=False)
     test_dataloader = dm_.prepare_data(path_data=data_path("test"), drop_last=False)
 
@@ -40,7 +40,7 @@ def get_model(model_state_path=None, tokenizer_state_path=None):
     if model_state_path:
         model.load_state_dict(torch.load(model_state_path, map_location=torch.device(DEVICE)))
 
-    return model, dm_, (train_dataloader, dev_dataloader, test_dataloader)
+    return model, dm_, (dev_dataloader, test_dataloader) # train_dataloader,
 
 
 def train(prin=False, filename="progress_log_train.txt", model_state_path=None, freez=False):

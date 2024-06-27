@@ -11,6 +11,7 @@ class UNIFTokenizer:
         token_list = json.load(open(path_tok, 'r', encoding="utf8"))
 
         token_list = set(token_list) - set(self.tokenizer.vocab.keys()) | set(['[schema]'])
+        # token_list = set(['[schema]'])
         self.tokenizer.add_tokens(list(token_list))
 
         self.max_sent_len = max_length
@@ -50,7 +51,7 @@ class UNIFTokenizer:
         token_list = self.tokenizer.decode(token_list)
         # декодер удаляет пробелы перед спецсимволами
         token_list = ' ?'.join(token_list.split('?'))
-        return token_list.replace(self.tokenizer.pad_token, '')
+        return token_list.replace(self.tokenizer.pad_token, '').strip() 
 
 import os
 import yaml
